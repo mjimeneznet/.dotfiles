@@ -24,6 +24,7 @@ dotfiles push
 ## Setting up a new machine
 ```
 git clone --separate-git-dir=$HOME/.dotfiles https://github.com/mjimeneznet/.dotfiles.git ~
+./bootstrap.sh
 ```
 
 Workaround if in the new machine there're default config files:
