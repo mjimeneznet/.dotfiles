@@ -104,7 +104,8 @@ bindkey '^R' history-incremental-pattern-search-backward
 #------------------------------
 alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias ls='exa -la --git'
-
+alias imgcat='kitty +kitten icat'
+alias d='kitty +kitten diff'
 
 #------------------------------
 # Functions
