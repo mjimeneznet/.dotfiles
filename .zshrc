@@ -94,6 +94,8 @@ bindkey -M vicmd 'j' history-substring-search-down
 bindkey -v
 bindkey '^r' history-incremental-search-backward
 bindkey '^R' history-incremental-pattern-search-backward
+bindkey '^A' beginning-of-line
+bindkey '^E' end-of-line
 
 # End of lines configured by zsh-newuser-install
 # The following lines were added by compinstall
