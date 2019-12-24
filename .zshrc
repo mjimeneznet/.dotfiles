@@ -17,28 +17,9 @@ fi
 #------------------------------
 # History
 #------------------------------
-if [ -z $HISTFILE ]; then
-    HISTFILE=$HOME/.zsh_history
-fi
 HISTSIZE=20000
 SAVEHIST=20000
-
-# Show history
-case $HIST_STAMPS in
-  "mm/dd/yyyy") alias history='fc -fl 1' ;;
-  "dd.mm.yyyy") alias history='fc -El 1' ;;
-  "yyyy-mm-dd") alias history='fc -il 1' ;;
-  *) alias history='fc -El 1' ;;
-esac
-
-setopt append_history
-setopt inc_append_history
-setopt extended_history
-setopt hist_expire_dups_first
-setopt hist_ignore_dups
-setopt hist_ignore_space
-setopt hist_verify
-setopt share_history
+HIST_STAMPS="dd.mm.yyyy"
 
 #------------------------------
 # Options
@@ -63,8 +44,15 @@ zplug "zsh-users/zsh-history-substring-search"
 zplug "zsh-users/zsh-autosuggestions"
 zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "romkatv/powerlevel10k", as:theme, depth:1
+zplug "junegunn/fzf", from:github, as:plugin, use:"shell/*.zsh"
+zplug "lib/completion", from:oh-my-zsh
+zplug "lib/history", from:oh-my-zsh
+zplug "lib/key-bindings", from:oh-my-zsh
+zplug "b4b4r07/httpstat", as:command, use:'(*).sh', rename-to:'$1'
+zplug "stedolan/jq", from:gh-r, as:command, rename-to:jq
+zplug "b4b4r07/emoji-cli", on:"stedolan/jq"
+zplug "mrowa44/emojify", from:github, as:command
 
-# Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
     if read -q; then
@@ -75,10 +63,14 @@ fi
 # Then, source plugins and add commands to $PATH
 zplug load 
 
+eval "$(fasd --init auto)"
 #------------------------------
 # Completion
 #------------------------------
+source /usr/share/fzf/completion.zsh
+
 autoload -Uz compinit && compinit
+
 zstyle ':completion:*' menu select
 zstyle ':completion:*' rehash true
 zstyle ':completion::complete:*' gain-privileges 1
@@ -86,20 +78,7 @@ zstyle ':completion::complete:*' gain-privileges 1
 #------------------------------
 # Bindings
 #------------------------------
-
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-bindkey -M vicmd 'k' history-substring-search-up
-bindkey -M vicmd 'j' history-substring-search-down
-bindkey -v
-bindkey '^r' history-incremental-search-backward
-bindkey '^R' history-incremental-pattern-search-backward
-bindkey '^A' beginning-of-line
-bindkey '^E' end-of-line
-
-# End of lines configured by zsh-newuser-install
-# The following lines were added by compinstall
-#zstyle :compinstall filename '/home/mjimenez/.zshrc'
+source /usr/share/fzf/key-bindings.zsh
 
 #------------------------------
 # Aliases
@@ -108,12 +87,50 @@ alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias ls='exa -la --git'
 alias imgcat='kitty +kitten icat'
 alias d='kitty +kitten diff'
+alias cat='bat'
+alias superpacman"=pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -r sudo pacman -S"
+
+#------------------------------
+# Exports
+#------------------------------
+export MANPAGER="zsh -c 'col -bx | bat -l man -p'"
+export PAGER="less -RF"
+export BAT_PAGER="less -RF"
+export FZF_DEFAULT_COMMAND='rg --files --no-ignore --hidden --follow -g "!{.git,node_modules}/*" 2> /dev/null'
+export FZF_CTRL_T_OPTS="--select-1 --exit-0"
+
 
 #------------------------------
 # Functions
 #------------------------------
+# Change dir and run a ls
 chpwd() {
 	exa -la --git
+}
+
+# Uncompress everything
+ex() {
+    if [[ -f $1 ]]; then
+        case $1 in
+          *.tar.bz2) tar xvjf $1;;
+          *.tar.gz) tar xvzf $1;;
+          *.tar.xz) tar xvJf $1;;
+          *.tar.lzma) tar --lzma xvf $1;;
+          *.bz2) bunzip $1;;
+          *.rar) unrar $1;;
+          *.gz) gunzip $1;;
+          *.tar) tar xvf $1;;
+          *.tbz2) tar xvjf $1;;
+          *.tgz) tar xvzf $1;;
+          *.zip) unzip $1;;
+          *.Z) uncompress $1;;
+          *.7z) 7z x $1;;
+          *.dmg) hdiutul mount $1;; # mount OS X disk images
+          *) echo "'$1' cannot be extracted via >ex<";;
+    esac
+    else
+        echo "'$1' is not a valid file"
+    fi
 }
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
