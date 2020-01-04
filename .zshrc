@@ -52,6 +52,7 @@ zplug "b4b4r07/httpstat", as:command, use:'(*).sh', rename-to:'$1'
 zplug "stedolan/jq", from:gh-r, as:command, rename-to:jq
 zplug "b4b4r07/emoji-cli", on:"stedolan/jq"
 zplug "mrowa44/emojify", from:github, as:command
+zplug "MichaelAquilina/zsh-auto-notify"
 
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
