@@ -19,7 +19,8 @@ if [[ "$OSTYPE" == *"linux"* ]]; then
 		echo "fasd (command-line productiviy booster)"
 		echo "emojify (emojis!)"
 		echo "ranger (console file manager with graphics support)"
-		sudo pacman -Syu --noconfirm git zsh kitty exa tldr diff-so-fancy bat ripgrep fzf fd fasd emojify ranger ffmpegthumbnailer 
+		sudo pacman -Syu --noconfirm git zsh kitty exa tldr diff-so-fancy bat ripgrep fzf fd fasd ranger ffmpegthumbnailer 
+		sudo pamac emojify
 		echo "Configuring git..."
 		git config --global user.name "Manuel Jimenez"
 		git config --global user.email "mjimenez@mjimenez.net"
