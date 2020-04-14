@@ -126,6 +126,7 @@ eval "$(fasd --init auto)"
 # Completion & Bindings
 #------------------------------
 [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
+echo "[[ $commands[kubectl] ]] && source <(kubectl completion zsh)"
 
 autoload -Uz compinit && compinit
 
@@ -138,9 +139,6 @@ zstyle ':completion::complete:*' gain-privileges 1
 #------------------------------
 alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias ls='exa -la --git'
-alias imgcat='kitty +kitten icat'
-alias d='kitty +kitten diff'
-#alias cat='bat'
 alias superpacman"=pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -r sudo pacman -S"
 
 #------------------------------
@@ -186,7 +184,7 @@ ex() {
     fi
 }
 
-export PATH=~/.local/bin:$PATH
+export PATH=~/.local/bin:~/code/stuart/tfenv/bin:$PATH
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
