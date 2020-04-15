@@ -126,7 +126,8 @@ eval "$(fasd --init auto)"
 # Completion & Bindings
 #------------------------------
 [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
-echo "[[ $commands[kubectl] ]] && source <(kubectl completion zsh)"
+[[ $commands[kubectl] ]] && source <(kubectl completion zsh)
+[[ -f ~/.docker-compose.zsh ]] && source ~/.docker-compose.zsh
 
 autoload -Uz compinit && compinit
 
