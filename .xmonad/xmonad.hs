@@ -297,7 +297,14 @@ myKeys conf = let
     , ("M-S-q"                     , addName "Quit XMonad"                     $ confirmPrompt hotPromptTheme "Quit XMonad" $ io (exitWith ExitSuccess))
     ] ^++^
 
-
+    -----------------------------------------------------------------------
+    -- Applications 
+    -----------------------------------------------------------------------
+    subKeys "Applications"
+    [ ("M-<Return>"                , addName "Terminal"                        $ spawn myTerminal)
+   
+    ] ^++^
+ 
     -----------------------------------------------------------------------
     -- Layouts & Sub-layouts
     -----------------------------------------------------------------------
