@@ -13,7 +13,13 @@ Config { font    = "xft:FiraCode Nerd Font:pixelsize=12:antialias=true:hinting=t
        , persistent = True
        , iconRoot = "/home/mjimenez/.config/xmobar/xxpm/"  -- default: "."
        , commands = [ Run Date "%a, %d %b %Y, %H:%M:%S" "date" 10
-                    , Run Network "enp3s0" ["-t", "<icon=net_up_20.xpm/>up <rxbar> <icon=net_down_20.xpm/>dn <txbar>"] 10
+                    , Run DynNetwork [ "--template" , "<dev>: <tx>kB/s|<rx>kB/s"
+                             , "--Low"      , "1000"       -- units: B/s
+                             , "--High"     , "5000"       -- units: B/s
+                             , "--low"      , "darkgreen"
+                             , "--normal"   , "darkorange"
+                             , "--high"     , "darkred"
+                             ] 10 
                     , Run Cpu ["-t", "<icon=cpu_20.xpm/> cpu <bar> (<total>%)","-H","50","--high","red"] 10
                     , Run Memory ["-t", "<icon=memory-icon_20.xpm/> mem <usedbar> (<usedratio>%)"] 10
                     , Run DiskU [("/", "<icon=harddisk-icon_20.xpm/> hdd <usedbar> (<used>)")] [] 3600
