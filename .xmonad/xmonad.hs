@@ -58,18 +58,29 @@ import XMonad.Actions.CopyWindow -- Provides bindings to duplicate a window on m
 import XMonad.Actions.FloatSnap -- Move and resize floating windows using other windows and the edge of the screen as guidelines
 import XMonad.Hooks.UrgencyHook -- UrgencyHook lets you configure an action to occur when a window demands your attention
 import XMonad.Util.NamedWindows -- This module allows you to associate the X titles of windows with them
-
+import XMonad.Actions.WithAll -- Functions for performing action on all windows of the current workspace
+import XMonad.Actions.Promote -- Promote windows to master
 
 ---------------------------------------------------------------------
 --CONFIG
 ---------------------------------------------------------------------
 windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace . W.current . windowset
 
-myTerminal  = "alacritty"
+myTerminal           = "alacritty"
 
-spotifyCommand      = "spotify"
-spotifyClassName    = "Spotify"
-isSpotify           = (className =? spotifyClassName)
+rofiAppCommand       = "rofi -show run"
+
+spotifyCommand       = "spotify"
+spotifyClassName     = "Spotify"
+isSpotify            = (className =? spotifyClassName)
+
+slackCommand         = "slack"
+slackClassName       = "Slack"
+isSlack              = (className =? slackClassName)
+
+pavucontrolCommand   = "pavucontrol"
+pavucontrolClassName = "pavucontrol"
+isPavucontrol        = (className =? pavucontrolClassName)
 ---------------------------------------------------------------------
 --THEME
 ---------------------------------------------------------------------
@@ -110,14 +121,9 @@ myWorkspaces = [wsDEV, wsCOM, wsWWW, wsVIRT, wsGFX]
 ---------------------------------------------------------------------
 --SCRATCHPADS
 ---------------------------------------------------------------------
-myScratchpads = [
-                  NS "vifm" "alacritty --class vifm -e vifm" (resource =? "vifm") centered
-                , NS "notes" "alacritty --class notes -e vim ~/notes.md" (resource =? "notes") centered
-                , NS "spotify" spotifyCommand isSpotify centered 
-                , NS "pavucontrol" "pavucontrol" (resource =? "pavucontrol") centeredSmall
-                , NS "hexchat" "hexchat" (resource =? "hexchat") centered
-                , NS "slack" "slack" (resource =? "slack") centered
-                , NS "dashboard-personal" "alacritty --class dashboard-personal -e wtfutil --config=~/.dotfiles/config/wtf/personal.yml" (resource =? "dashboard-personal") centered
+myScratchpads = [ NS "spotify" spotifyCommand isSpotify centered 
+                , NS "pavucontrol" pavucontrolCommand isPavucontrol centeredSmall
+                , NS "slack" slackCommand isSlack centered
               ]
               where
                 role = stringProperty "WM_WINDOW_ROLE"
@@ -183,7 +189,8 @@ spotifyForceFloatingEventHook = dynamicPropertyChange "WM_NAME" (title =? "Spoti
 myStartupHook = do
           setWMName "LG3D"
           setDefaultCursor xC_left_ptr
-          spawnOnce "compton --config /home/mjimenez/.config/compton/compton.conf" 
+          spawnOnce "compton --config ~/.config/compton/compton.conf" 
+          spawnOnce "~/.local/bin/manage_screens.sh"
           --spawnOnce "emacs --daemon &" 
           --spawnOnce "nitrogen --restore &" 
           --spawnOnce "exec /usr/bin/trayer --edge top --align right --SetDockType true --SetPartialStrut true --expand true --width 15 --transparent true --alpha 0 --tint 0x292d3e --height 19 &"
@@ -302,8 +309,42 @@ myKeys conf = let
     -----------------------------------------------------------------------
     subKeys "Applications"
     [ ("M-<Return>"                , addName "Terminal"                        $ spawn myTerminal)
+    , ("M-S-s"                       , addName "Slack"                           $ namedScratchpadAction myScratchpads "slack")
+    , ("M-S-a"                       , addName "Pavucontrol"                           $ namedScratchpadAction myScratchpads "pavucontrol")
+    , ("M-S-z"                       , addName "Spotify"                           $ namedScratchpadAction myScratchpads "spotify")
    
     ] ^++^
+    -----------------------------------------------------------------------
+    -- Launchers 
+    -----------------------------------------------------------------------
+    subKeys "Launchers"
+    [ ("M-p"                       , addName "Rofi Apps"                       $ spawn rofiAppCommand)
+    
+    ] ^++^ 
+
+    -----------------------------------------------------------------------
+    -- Windows 
+    -----------------------------------------------------------------------
+    subKeys "Windows"
+    (
+    [ ("M-<Backspace>"            , addName "Kill"                            kill1)
+    , ("M-S-<Backspace>"          , addName "Kill all"                        $ confirmPrompt hotPromptTheme "kill all" $ killAll)
+    , ("M-d"                      , addName "Duplicate w to all ws"           $ toggleCopyToAll)
+    , ("M-S-d"                    , addName "Kill other duplicates"           $ killAllOtherCopies)
+    , ("M-S-p"                      , addName "Promote"                         $ promote)
+    , ("M-z u"                    , addName "Focus urgent"                    focusUrgent)
+    , ("M-z m"                    , addName "Focus master"                    $ windows W.focusMaster)
+    ]
+
+    -- ++ zipM' "M-"               "Navigate window"                           dirKeys dirs windowGo True
+    -- ++ zipM' "M-S-"               "Move window"                               dirKeys dirs windowSwap True
+  --  ++ zipM' "M1-"              "Move window"                               dirKeys dirs windowSwap True
+  --  ++ zipM  "M-C-"             "Merge w/sublayout"                         dirKeys dirs (sendMessage . pullGroup)
+  --  ++ zipM' "M-S-"             "Navigate screen"                           arrowKeys dirs screenGo True
+  --  ++ zipM' "M-C-"             "Move window to screen"                     arrowKeys dirs windowToScreen True
+ --   ++ zipM' "M-S-"             "Swap workspace to screen"                  arrowKeys dirs screenSwap True
+
+    ) ^++^
  
     -----------------------------------------------------------------------
     -- Layouts & Sub-layouts
@@ -377,7 +418,7 @@ myMouseBindings (XConfig {XMonad.modMask = myModMask}) = M.fromList $
 ---------------------------------------------------------------------
 main = do
    
-  xmproc <- spawnPipe "xmobar /home/mjimenez/.config/xmobar/xmobarrc0"
+  xmproc <- spawnPipe "xmobar ~/.config/xmobar/xmobarrc0"
 
   xmonad 
     $ addDescrKeys' ((myModMask, xK_F12), showKeybindings) myKeys
