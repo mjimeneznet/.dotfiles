@@ -1,65 +1,91 @@
+{-# LANGUAGE AllowAmbiguousTypes, DeriveDataTypeable, TypeSynonymInstances, MultiParamTypeClasses #-}
+---------------------------------------------------------------------------
+--                                                                       --
+--     _|      _|  _|      _|                                      _|    --
+--       _|  _|    _|_|  _|_|    _|_|    _|_|_|      _|_|_|    _|_|_|    --
+--         _|      _|  _|  _|  _|    _|  _|    _|  _|    _|  _|    _|    --
+--       _|  _|    _|      _|  _|    _|  _|    _|  _|    _|  _|    _|    --
+--     _|      _|  _|      _|    _|_|    _|    _|    _|_|_|    _|_|_|    --
+--                                                                       --
+---------------------------------------------------------------------------
+---------------------------------------------------------------------------
+--IMPORTS
+---------------------------------------------------------------------------
+
+-- BASE
 import XMonad
 import XMonad.Config.Desktop
+import XMonad.ManageHook
+import Control.Monad (liftM, liftM2, join)                                                       -- myManageHookShift
+import Data.Monoid
 import Data.List
 import qualified Data.Map as M
-import Data.Monoid
 import System.Exit
-import System.IO                            -- for xmonbar
+import System.IO                                                                                 -- for xmonbar
+import qualified XMonad.StackSet as W
 
+-- ACTIONS
 import XMonad.Actions.SpawnOn
+import XMonad.Actions.MouseResize                                                                -- Resize Windows with the mouse (lower right corner)
+import XMonad.Actions.WithAll                                                                    -- Functions for performing action on all windows of the current workspace
+import XMonad.Actions.Promote                                                                    -- Promote windows to master
+import XMonad.Actions.RotSlaves                                                                  -- Rotate all windows except the master window and keep the focus in place.
+import XMonad.Actions.DynamicWorkspaces                                                          -- Provides bindings to add and delete workspaces
+import XMonad.Actions.CopyWindow                                                                 -- Provides bindings to duplicate a window on multiple workspaces
+import XMonad.Actions.FloatSnap                                                                  -- Move and resize floating windows using other windows and the edge of the screen as guidelines
+import XMonad.Actions.CycleWS                                                                    -- Provides bindings to cycle forward or backward through the list of workspaces
+import XMonad.Actions.MessageFeedback                                                            -- pseudo conditional key bindings
+import XMonad.Actions.SinkAll                                                                    -- pushes all floating windows on the current workspace back into tiling
+import qualified XMonad.Actions.ConstrainedResize as Sqr                                         -- Lets you constrain the aspect ratio of a floating window
+
+-- LAYOUT
 import XMonad.Layout.ThreeColumns
 import XMonad.Layout.NoBorders
 import XMonad.Layout.Spacing
 import XMonad.Layout.Gaps
-import XMonad.Hooks.ManageDocks
-import XMonad.Util.Run
-import XMonad.Util.EZConfig
-import qualified XMonad.StackSet as W
-import XMonad.Util.NamedScratchpad
-import XMonad.ManageHook
+import XMonad.Layout.MultiToggle                                                                 -- Apply and unapply transformers to window layout (rotate, zoom in, zoom out)
+import XMonad.Layout.MultiToggle.Instances                                                       -- Common instances for the previous module
+import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))                       -- move and resize windows with the keyboard in any layout
+import XMonad.Layout.SimplestFloat                                                               -- basic floating layout like SimpleFloat but without the decoration
+import XMonad.Layout.OneBig                                                                      -- one (master) window at top left corner of screen, and other (slave) windows at top
+import XMonad.Layout.ThreeColumns                                                                -- With 2560x1600 pixels this layout can be used for a huge main window and up to six reasonable sized slave windows
+import XMonad.Layout.Renamed (renamed, Rename(CutWordsLeft, Replace))                            -- Layout modifier that can modify the description of its underlying layout
+import XMonad.Layout.LimitWindows (limitWindows, increaseLimit, decreaseLimit)                   -- Layout modifier that limits the number of windows that can be shown
+import XMonad.Layout.ResizableTile                                                               -- More useful tiled layout that allows you to change a width/height of window.
+import XMonad.Layout.ZoomRow (zoomRow, zoomIn, zoomOut, zoomReset, ZoomMessage(ZoomFullToggle))  -- Row layout with individually resizable elements
+import XMonad.Layout.Reflect (reflectVert, reflectHoriz, REFLECTX(..), REFLECTY(..))             -- Reflect a layout horizontally or vertically
+import XMonad.Layout.GridVariants (Grid(Grid))                                                   -- Two layouts: one is a variant of the Grid layout that allows the desired aspect ratio of windows to be specified. The other is like Tall but places a grid with fixed number of rows and columns in the master area and uses an aspect-ratio-specified layout for the slaves
+import XMonad.Layout.Fullscreen as LF
+import XMonad.Layout.BinarySpacePartition                                                        -- Layout where new windows will split the focused window in half, based off of BSPWM
+import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle))          -- Toggle between Layouts
 
+-- HOOKS
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.DynamicLog
-import XMonad.Hooks.SetWMName -- Sets the WM name to a given string (fix Java things)
-import XMonad.Util.SpawnOnce -- Spawns a command once, and only once
-import XMonad.Util.Cursor -- Sets the default mouse cursor
-import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle)) -- Toggle between Layouts
-import XMonad.Actions.MouseResize -- Resize Windows with the mouse (lower right corner)
-import XMonad.Layout.MultiToggle  -- Apply and unapply transformers to window layout (rotate, zoom in, zoom out)
-import XMonad.Layout.MultiToggle.Instances  -- Common instances for the previous module
-import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))  -- move and resize windows with the keyboard in any layout
-import XMonad.Layout.SimplestFloat -- basic floating layout like SimpleFloat but without the decoration
-import XMonad.Layout.OneBig -- one (master) window at top left corner of screen, and other (slave) windows at top
-import XMonad.Layout.ThreeColumns  -- With 2560x1600 pixels this layout can be used for a huge main window and up to six reasonable sized slave windows
-import XMonad.Layout.Renamed (renamed, Rename(CutWordsLeft, Replace)) -- Layout modifier that can modify the description of its underlying layout
-import XMonad.Layout.LimitWindows (limitWindows, increaseLimit, decreaseLimit) -- Layout modifier that limits the number of windows that can be shown
-import XMonad.Layout.ResizableTile -- More useful tiled layout that allows you to change a width/height of window.
-import XMonad.Layout.ZoomRow (zoomRow, zoomIn, zoomOut, zoomReset, ZoomMessage(ZoomFullToggle)) -- Row layout with individually resizable elements
-import XMonad.Layout.Reflect (reflectVert, reflectHoriz, REFLECTX(..), REFLECTY(..)) -- Reflect a layout horizontally or vertically
-import XMonad.Layout.GridVariants (Grid(Grid))  -- Two layouts: one is a variant of the Grid layout that allows the desired aspect ratio of windows to be specified. The other is like Tall but places a grid with fixed number of rows and columns in the master area and uses an aspect-ratio-specified layout for the slaves
-import XMonad.Hooks.EwmhDesktops -- Makes xmonad use the EWMH hints to tell panel applications about its workspaces and the windows therein. It also allows the user to interact with xmonad by clicking on panels and window lists
-import XMonad.Hooks.DynamicProperty --apply a ManageHook to an already-mapped window when a property changes
-import XMonad.Layout.Fullscreen as LF
-import XMonad.Hooks.ManageHelpers -- Helper functions to be used in manageHook
-import XMonad.Hooks.FadeWindows -- flexible and general compositing interface than FadeInactive
-import XMonad.Util.NamedActions -- A wrapper for keybinding configuration that can list the available keybindings
-import XMonad.Util.Paste as P -- A module for sending key presses to windows
-import qualified XMonad.Actions.ConstrainedResize as Sqr -- Lets you constrain the aspect ratio of a floating window
-import XMonad.Prompt                        -- A module for writing graphical prompts for XMonad 
-import XMonad.Prompt.ConfirmPrompt          -- A module for setting up simple confirmation prompts for keybindings
-import Control.Monad (liftM, liftM2, join)  -- myManageHookShift
-import XMonad.Actions.CycleWS -- Provides bindings to cycle forward or backward through the list of workspaces
-import XMonad.Util.WorkspaceCompare -- custom WS functions filtering NSP
-import XMonad.Actions.MessageFeedback       -- pseudo conditional key bindings
-import XMonad.Layout.BinarySpacePartition -- Layout where new windows will split the focused window in half, based off of BSPWM
-import XMonad.Actions.SinkAll -- pushes all floating windows on the current workspace back into tiling
-import XMonad.Util.XSelection -- accessing and manipulating X Window's mouse selection
-import XMonad.Actions.CopyWindow -- Provides bindings to duplicate a window on multiple workspaces
-import XMonad.Actions.FloatSnap -- Move and resize floating windows using other windows and the edge of the screen as guidelines
-import XMonad.Hooks.UrgencyHook -- UrgencyHook lets you configure an action to occur when a window demands your attention
-import XMonad.Util.NamedWindows -- This module allows you to associate the X titles of windows with them
-import XMonad.Actions.WithAll -- Functions for performing action on all windows of the current workspace
-import XMonad.Actions.Promote -- Promote windows to master
+import XMonad.Hooks.SetWMName                                                                    -- Sets the WM name to a given string (fix Java things)
+import XMonad.Hooks.EwmhDesktops                                                                 -- Makes xmonad use the EWMH hints to tell panel applications about its workspaces and the windows therein. It also allows the user to interact with xmonad by clicking on panels and window lists
+import XMonad.Hooks.DynamicProperty                                                              --apply a ManageHook to an already-mapped window when a property changes
+import XMonad.Hooks.ManageDocks
+import XMonad.Hooks.ManageHelpers                                                                -- Helper functions to be used in manageHook
+import XMonad.Hooks.FadeWindows                                                                  -- flexible and general compositing interface than FadeInactive
+import XMonad.Hooks.UrgencyHook                                                                  -- UrgencyHook lets you configure an action to occur when a window demands your attention
+
+
+-- UTIL
+import XMonad.Util.SpawnOnce                                                                     -- Spawns a command once, and only once
+import XMonad.Util.Cursor                                                                        -- Sets the default mouse cursor
+import XMonad.Util.Run
+import XMonad.Util.EZConfig
+import XMonad.Util.NamedScratchpad
+import XMonad.Util.NamedActions                                                                  -- A wrapper for keybinding configuration that can list the available keybindings
+import XMonad.Util.Paste as P                                                                    -- A module for sending key presses to windows
+import XMonad.Util.NamedWindows                                                                  -- This module allows you to associate the X titles of windows with them
+import XMonad.Util.XSelection                                                                    -- accessing and manipulating X Window's mouse selection
+import XMonad.Util.WorkspaceCompare                                                              -- custom WS functions filtering NSP
+
+-- PROMPT
+import XMonad.Prompt                                                                             -- A module for writing graphical prompts for XMonad
+import XMonad.Prompt.ConfirmPrompt                                                               -- A module for setting up simple confirmation prompts for keybindings
 
 ---------------------------------------------------------------------
 --CONFIG
@@ -130,10 +156,10 @@ myScratchpads = [ NS "spotify" spotifyCommand isSpotify centered
                 centered = customFloating $ W.RationalRect 0.05 0.05 0.9 0.9
                 centeredSmall = customFloating $ W.RationalRect l t w h
                   where
-                    h = 0.6       -- height, 60%
-                    w = 0.6       -- width, 60%
-                    t = (1 - h)/2 -- centered top/bottom
-                    l = (1 - w)/2 -- centered left/right
+                    h = 0.6                                -- height, 60%
+                    w = 0.6                                -- width, 60%
+                    t = (1 - h)/2                          -- centered top/bottom
+                    l = (1 - w)/2                          -- centered left/right
 
 
 ---------------------------------------------------------------------
@@ -156,7 +182,7 @@ floats     = renamed [Replace "floats"]   $ limitWindows 20 $ simplestFloat
 
 
 ---------------------------------------------------------------------------
--- Event Actions
+                         -- Event Actions
 ---------------------------------------------------------------------------
 
 myHandleEventHook = docksEventHook
@@ -209,7 +235,7 @@ restartXmonad = do
 ---------------------------------------------------------------------------
 --URGENCY 
 ---------------------------------------------------------------------------
--- from https://pbrisbin.com/posts/using_notify_osd_for_xmonad_notifications/
+                         -- from https://pbrisbin.com/posts/using_notify_osd_for_xmonad_notifications/
 data LibNotifyUrgencyHook = LibNotifyUrgencyHook deriving (Read, Show)
 
 instance UrgencyHook LibNotifyUrgencyHook where
@@ -218,17 +244,17 @@ instance UrgencyHook LibNotifyUrgencyHook where
         Just idx <- fmap (W.findTag w) $ gets windowset
 
         safeSpawn "notify-send" [show name, "workspace " ++ idx]
--- cf https://github.com/pjones/xmonadrc
+                         -- cf https://github.com/pjones/xmonadrc
 
  
 ---------------------------------------------------------------------
 --KEYBINDINGS
 ---------------------------------------------------------------------
-myModMask = mod4Mask -- Sets modkey to Super  
+myModMask = mod4Mask                          -- Sets modkey to Super
 
--- Display keyboard mappings using zenity
--- from https://github.com/thomasf/dotfiles-thomasf-xmonad/
---              blob/master/.xmonad/lib/XMonad/Config/A00001.hs
+                         -- Display keyboard mappings using zenity
+                         -- from https://github.com/thomasf/dotfiles-thomasf-xmonad/
+                         --              blob/master/.xmonad/lib/XMonad/Config/A00001.hs
 showKeybindings :: [((KeyMask, KeySym), NamedAction)] -> NamedAction
 showKeybindings x = addName "Show Keybindings" $ io $ do
     h <- spawnPipe "zenity --text-info --font=terminus"
@@ -238,12 +264,12 @@ showKeybindings x = addName "Show Keybindings" $ io $ do
 
 wsKeys = map show $ [1..9] ++ [0]
 
--- any workspace but scratchpad
+                         -- any workspace but scratchpad
 notSP = (return $ ("NSP" /=) . W.tag) :: X (WindowSpace -> Bool)
 shiftAndView dir = findWorkspace getSortByIndex dir (WSIs notSP) 1
         >>= \t -> (windows . W.shift $ t) >> (windows . W.greedyView $ t)
 
--- hidden, non-empty workspaces less scratchpad
+                         -- hidden, non-empty workspaces less scratchpad
 shiftAndView' dir = findWorkspace getSortByIndexNoSP dir HiddenNonEmptyWS 1
         >>= \t -> (windows . W.shift $ t) >> (windows . W.greedyView $ t)
 nextNonEmptyWS = findWorkspace getSortByIndexNoSP Next HiddenNonEmptyWS 1
@@ -253,7 +279,7 @@ prevNonEmptyWS = findWorkspace getSortByIndexNoSP Prev HiddenNonEmptyWS 1
 getSortByIndexNoSP =
         fmap (.namedScratchpadFilterOutWorkspace) getSortByIndex
 
--- toggle any workspace but scratchpad
+                         -- toggle any workspace but scratchpad
 myToggle = windows $ W.view =<< W.tag . head . filter
         ((\x -> x /= "NSP" && x /= "SP") . W.tag) . W.hidden
 
@@ -270,23 +296,23 @@ myKeys conf = let
     zipM  m nm ks as f = zipWith (\k d -> (m ++ k, addName nm $ f d)) ks as
     zipM' m nm ks as f b = zipWith (\k d -> (m ++ k, addName nm $ f d b)) ks as
 
-    -- from xmonad.layout.sublayouts
+                             -- from xmonad.layout.sublayouts
     focusMaster' st = let (f:fs) = W.integrate st
         in W.Stack f [] fs
     swapMaster' (W.Stack f u d) = W.Stack f [] $ reverse u ++ d
 
-    -- try sending one message, fallback if unreceived, then refresh
+                             -- try sending one message, fallback if unreceived, then refresh
     tryMsgR x y = sequence_ [(tryMessage_ x y), refresh]
 
-    -- warpCursor = warpToWindow (9/10) (9/10)
+                             -- warpCursor = warpToWindow (9/10) (9/10)
 
-    -- cf https://github.com/pjones/xmonadrc
+                             -- cf https://github.com/pjones/xmonadrc
     --switch :: ProjectTable -> ProjectName -> X ()
     --switch ps name = case Map.lookup name ps of
-    --  Just p              -> switchProject p
-    --  Nothing | null name -> return ()
+                             --  Just p              -> switchProject p
+                             --  Nothing | null name -> return ()
 
-    -- do something with current X selection
+                             -- do something with current X selection
     unsafeWithSelection app = join $ io $ liftM unsafeSpawn $ fmap (\x -> app ++ " " ++ x) getSelection
 
     toggleFloat w = windows (\s -> if M.member w (W.floating s)
@@ -296,7 +322,7 @@ myKeys conf = let
     in
 
     -----------------------------------------------------------------------
-    -- System / Utilities
+                             -- System / Utilities
     -----------------------------------------------------------------------
     subKeys "Xmonad"
     [ ("M-q"                       , addName "Restart XMonad"                  $ confirmPrompt hotPromptTheme "Restart XMonad" $ restartXmonad)
@@ -304,26 +330,46 @@ myKeys conf = let
     , ("M-S-q"                     , addName "Quit XMonad"                     $ confirmPrompt hotPromptTheme "Quit XMonad" $ io (exitWith ExitSuccess))
     ] ^++^
 
+    subKeys "System"
+    [ ("M-C-S-q"                   , addName "Power Off"                       $ confirmPrompt hotPromptTheme "Shutdown" $ spawn "shutdown -h now")
+    ] ^++^
+
     -----------------------------------------------------------------------
-    -- Applications 
+                             -- Applications
     -----------------------------------------------------------------------
     subKeys "Applications"
-    [ ("M-<Return>"                , addName "Terminal"                        $ spawn myTerminal)
+    [ ("M-<Return>"                  , addName "Terminal"                        $ spawn myTerminal)
     , ("M-S-s"                       , addName "Slack"                           $ namedScratchpadAction myScratchpads "slack")
-    , ("M-S-a"                       , addName "Pavucontrol"                           $ namedScratchpadAction myScratchpads "pavucontrol")
-    , ("M-S-z"                       , addName "Spotify"                           $ namedScratchpadAction myScratchpads "spotify")
+    , ("M-S-a"                       , addName "Pavucontrol"                     $ namedScratchpadAction myScratchpads "pavucontrol")
+    , ("M-S-z"                       , addName "Spotify"                         $ namedScratchpadAction myScratchpads "spotify")
+    , ("<Print>"                     , addName "Screenshots"                     $ spawn "flameshot gui")
    
     ] ^++^
+
     -----------------------------------------------------------------------
-    -- Launchers 
+                             -- Launchers
     -----------------------------------------------------------------------
     subKeys "Launchers"
     [ ("M-p"                       , addName "Rofi Apps"                       $ spawn rofiAppCommand)
     
     ] ^++^ 
-
     -----------------------------------------------------------------------
-    -- Windows 
+                             -- Workspaces
+    -----------------------------------------------------------------------
+
+    subKeys "Workspaces"
+    (
+    [ ("M-w"                    , addName "Next Workspace"           nextWS) 
+    , ("M-S-w"                  , addName "Previous Workspace"           prevWS) 
+    , ("M-a"                    , addName "Toggle last workspace"       $ toggleWS' ["NSP"])
+    ]
+    ++ zipM "M-"                "View      ws"                          wsKeys [0..] (withNthWorkspace W.greedyView)
+    ++ zipM "M-S-"              "Move w to ws"                          wsKeys [0..] (withNthWorkspace W.shift)
+    ++ zipM "M-S-C-"            "Copy w to ws"                          wsKeys [0..] (withNthWorkspace copy)
+    ) ^++^
+ 
+    -----------------------------------------------------------------------
+                             -- Windows
     -----------------------------------------------------------------------
     subKeys "Windows"
     (
@@ -331,23 +377,45 @@ myKeys conf = let
     , ("M-S-<Backspace>"          , addName "Kill all"                        $ confirmPrompt hotPromptTheme "kill all" $ killAll)
     , ("M-d"                      , addName "Duplicate w to all ws"           $ toggleCopyToAll)
     , ("M-S-d"                    , addName "Kill other duplicates"           $ killAllOtherCopies)
-    , ("M-S-p"                      , addName "Promote"                         $ promote)
-    , ("M-z u"                    , addName "Focus urgent"                    focusUrgent)
-    , ("M-z m"                    , addName "Focus master"                    $ windows W.focusMaster)
+    , ("M-S-p"                    , addName "Promote"                         $ promote)
+    , ("M-u"                      , addName "Focus urgent"                    focusUrgent)
+    , ("M-m"                      , addName "Focus master"                    $ windows W.focusMaster)
+    , ("M-j"                      , addName "Rotate Next"                     $ windows W.focusDown)
+    , ("M-k"                      , addName "Rotate Prev"                     $ windows W.focusUp)
+    , ("M-S-j"                    , addName "Swap Focused with Next"          $ windows W.swapDown)
+    , ("M-S-k"                    , addName "Swap Focused with Prev"          $ windows W.swapUp)
+    , ("M1-S-<Tab>"               , addName "Rotate all windows but master"   rotSlavesDown)
+    , ("M1-C-<Tab>"               , addName "Rotate all windows"              rotAllDown)
+    , ("M-C-M1-<Up>"              , addName "NUSE" $ sendMessage Arrange)         
+    , ("M-C-M1-<Down>"            , addName "NUSE" $ sendMessage DeArrange)
+    , ("M-<Up>", addName "NUSE" $ sendMessage (MoveUp 10))
+    , ("M-<Down>", addName "NUSE" $ sendMessage (MoveDown 10))
+    , ("M-<Right>", addName "NUSE" $ sendMessage (MoveRight 10))
+    , ("M-<Left>", addName "NUSE"  $ sendMessage (MoveLeft 10))
+    , ("M-S-<Up>",  addName "NUSE" $ sendMessage (IncreaseUp 10))
+    , ("M-S-<Down>",  addName "NUSE" $ sendMessage (IncreaseDown 10))
+    , ("M-S-<Right>",  addName "NUSE" $ sendMessage (IncreaseRight 10))
+    , ("M-S-<Left>",  addName "NUSE" $ sendMessage (IncreaseLeft 10))
+    , ("M-C-<Up>",  addName "NUSE" $ sendMessage (DecreaseUp 10))
+    , ("M-C-<Down>",  addName "NUSE" $ sendMessage (DecreaseDown 10))
+    , ("M-C-<Right>",  addName "NUSE" $ sendMessage (DecreaseRight 10))
+    , ("M-C-<Left>",  addName "NUSE" $ sendMessage (DecreaseLeft 10))
+     
     ]
 
-    -- ++ zipM' "M-"               "Navigate window"                           dirKeys dirs windowGo True
-    -- ++ zipM' "M-S-"               "Move window"                               dirKeys dirs windowSwap True
-  --  ++ zipM' "M1-"              "Move window"                               dirKeys dirs windowSwap True
-  --  ++ zipM  "M-C-"             "Merge w/sublayout"                         dirKeys dirs (sendMessage . pullGroup)
-  --  ++ zipM' "M-S-"             "Navigate screen"                           arrowKeys dirs screenGo True
-  --  ++ zipM' "M-C-"             "Move window to screen"                     arrowKeys dirs windowToScreen True
- --   ++ zipM' "M-S-"             "Swap workspace to screen"                  arrowKeys dirs screenSwap True
+                             -- ++ zipM' "M-"               "Navigate window"                           dirKeys dirs windowGo True
+                             -- ++ zipM' "M-S-"               "Move window"                               dirKeys dirs windowSwap True
+                             -- ++ zipM' "M1-"              "Move window"                               dirKeys dirs windowSwap True
+                           --  ++ zipM  "M-C-"             "Merge w/sublayout"                         dirKeys dirs (sendMessage . pullGroup)
+                           --  ++ zipM' "M-S-"             "Navigate screen"                           arrowKeys dirs screenGo True
+                           --  ++ zipM' "M-C-"             "Move window to screen"                     arrowKeys dirs windowToScreen True
+                          --   ++ zipM' "M-S-"             "Swap workspace to screen"                  arrowKeys dirs screenSwap True
 
     ) ^++^
  
+
     -----------------------------------------------------------------------
-    -- Layouts & Sub-layouts
+                             -- Layouts & Sub-layouts
     -----------------------------------------------------------------------
 
     subKeys "Layout Management"
@@ -365,13 +433,13 @@ myKeys conf = let
     , ("M-S-r"                  , addName "Force Reflect (even on BSP)" $ sendMessage (XMonad.Layout.MultiToggle.Toggle REFLECTX))
 
 
-    -- If following is run on a floating window, the sequence first tiles it.
+                             -- If following is run on a floating window, the sequence first tiles it.
     , ("M-f"                   , addName "Fullscreen"                      $ sequence_ [ (withFocused $ windows . W.sink)
                                                                         , (sendMessage $ XMonad.Layout.MultiToggle.Toggle FULL) ])
 
-    -- Fake fullscreen fullscreens into the window rect. The expand/shrink
-    -- is a hack to make the full screen paint into the rect properly.
-    -- The tryMsgR handles the BSP vs standard resizing functions.
+                             -- Fake fullscreen fullscreens into the window rect. The expand/shrink
+                             -- is a hack to make the full screen paint into the rect properly.
+                             -- The tryMsgR handles the BSP vs standard resizing functions.
     , ("M-S-f"                  , addName "Fake fullscreen"             $ sequence_ [ (P.sendKey P.noModMask xK_F11)
                                                                                     , (tryMsgR (ExpandTowards L) (Shrink))
                                                                                     , (tryMsgR (ExpandTowards R) (Expand)) ])
@@ -382,12 +450,12 @@ myKeys conf = let
                            _ -> killAllOtherCopies
 
     -----------------------------------------------------------------------
-    -- Screens
+                             -- Screens
     -----------------------------------------------------------------------
 
--- Mouse bindings: default actions bound to mouse events
--- Includes window snapping on move/resize using X.A.FloatSnap
--- Includes window w/h ratio constraint (square) using X.H.ConstrainedResize
+                         -- Mouse bindings: default actions bound to mouse events
+                         -- Includes window snapping on move/resize using X.A.FloatSnap
+                         -- Includes window w/h ratio constraint (square) using X.H.ConstrainedResize
 myMouseBindings (XConfig {XMonad.modMask = myModMask}) = M.fromList $
 
     [ ((myModMask,               button1) ,(\w -> focus w
@@ -438,15 +506,15 @@ main = do
     , handleEventHook    = myHandleEventHook
     , logHook            = dynamicLogWithPP xmobarPP
                     {
-			  ppOutput = \x -> hPutStrLn xmproc x  -- >> hPutStrLn xmproc1 x  >> hPutStrLn xmproc2 x
-                        , ppCurrent = xmobarColor "#c3e88d" "" . wrap "[" "]" -- Current workspace in xmobar
-                        , ppVisible = xmobarColor "#c3e88d" ""                -- Visible but not current workspace
-                        , ppHidden = xmobarColor "#82AAFF" "" . wrap "*" ""   -- Hidden workspaces in xmobar
-                        , ppHiddenNoWindows = xmobarColor "#F07178" ""        -- Hidden workspaces (no windows)
-                        , ppTitle = xmobarColor "#d0d0d0" "" . shorten 80     -- Title of active window in xmobar
-                        , ppSep =  "<fc=#666666> | </fc>"                     -- Separators in xmobar
-                        , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"  -- Urgent workspace
-                        , ppExtras  = [windowCount]                           -- # of windows current workspace
+			  ppOutput = \x -> hPutStrLn xmproc x                           -- >> hPutStrLn xmproc1 x  >> hPutStrLn xmproc2 x
+                        , ppCurrent = xmobarColor "#c3e88d" "" . wrap "[" "]"                          -- Current workspace in xmobar
+                        , ppVisible = xmobarColor "#c3e88d" ""                                         -- Visible but not current workspace
+                        , ppHidden = xmobarColor "#82AAFF" "" . wrap "*" ""                            -- Hidden workspaces in xmobar
+                        , ppHiddenNoWindows = xmobarColor "#F07178" ""                                 -- Hidden workspaces (no windows)
+                        , ppTitle = xmobarColor "#d0d0d0" "" . shorten 80                              -- Title of active window in xmobar
+                        , ppSep =  "<fc=#666666> | </fc>"                                              -- Separators in xmobar
+                        , ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!"                           -- Urgent workspace
+                        , ppExtras  = [windowCount]                                                    -- # of windows current workspace
                         , ppOrder  = \(ws:l:t:ex) -> [ws,l]++ex++[t]
                     }
     } 
