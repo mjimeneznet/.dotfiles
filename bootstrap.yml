@@ -1,0 +1,83 @@
+---
+- hosts: localhost
+  gather_facts: true
+  become: true
+  become_user: root
+  vars:
+    basic_packages:
+      - zsh
+      - xmonad
+      - xmonad-contrib
+      - xmobar
+      - vim
+      - xorg-server
+      - xorg-xinit
+      - nvidia
+      - nvidia-settings
+      - nvidia-utils
+      - lightdm
+      - lightdm-gtk-greeter
+      - lightdm-gtk-greeter-settings
+      - nfs-utils  
+      - firefox
+      - firefox-i18n-es-es
+      - rofi
+      - exa
+      - tldr
+      - diff-so-fancy
+      - bat
+      - ripgrep
+      - fzf
+      - fd
+      - fasd
+      - otf-fira-code
+      - dunst
+      - libnotify
+      - feh
+      - mpv
+      - picom
+      - vifm
+      - python-pip
+        #      - emojify
+
+    myshares:
+      - programs
+      - download
+
+  tasks:
+    - name: "Installing basic packages"
+      package:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ basic_packages }}"
+
+    - name: "Creating Network Mountpoint Folders"
+      file:
+        path: "/media/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ myshares }}"
+
+    - name: "Mount Network Shares"
+      mount:
+        path: "/media/{{ item }}"
+        src: "stoya.mh25.space:/{{ item }}"
+        fstype: nfs
+        opts: rsize=8192,wsize=8192,timeo=14,intr,_netdev
+        state: present
+      loop: "{{ myshares }}"
+
+    - name: "Configure git"
+      git_config:
+        name: "{{ item.name }}"
+        scope: global
+        value: "{{ item.value }}"
+      loop:
+        - { name: "user.name", value: "Manuel Jimenez" }
+        - { name: "user.email", value: "mjimenez@mjimenez.net" }
+        - { name: "core.pager", value: "diff-so-fancy | less --tabs=4 -RFX" }
+
+    - name: "Install python packages"
+      pip:
+        name: ueberzug
+        extra_args: --user
