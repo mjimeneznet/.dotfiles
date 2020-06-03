@@ -5,6 +5,7 @@
   become_user: root
   vars:
     basic_packages:
+      - base-devel
       - zsh
       - xmonad
       - xmonad-contrib
@@ -30,7 +31,6 @@
       - fzf
       - fd
       - fasd
-      - otf-fira-code
       - dunst
       - libnotify
       - feh
@@ -38,7 +38,16 @@
       - picom
       - vifm
       - python-pip
-        #      - emojify
+      - lsof
+      - wget
+      - ffmpegthumbnailer
+      - imagemagick
+      - zathura
+      - xdotool
+      - sxiv
+    aur_packages:
+      - emojify
+      - nerd-fonts-complete
 
     myshares:
       - programs
@@ -51,6 +60,27 @@
         state: present
       loop: "{{ basic_packages }}"
 
+    - name: "Checking YAY (AUR)"
+      stat:
+        path: /usr/bin/yay
+      register: yay
+
+    - name: "Cloning YAY (AUR)"
+      git:
+        repo: 'https://aur.archlinux.org/yay-git.git'
+        dest: /tmp/yay-git
+      when: yay.stat.exists == false
+
+    - name: "Making YAY (AUR)"
+      command: cd /tmp/yay-git; makepgk -i
+      when: yay.stat.exists == false
+
+      #    - name: "Installing AUR packages"
+      #      command: "yay --norebuild {{ item }}"
+      #      loop:
+      #        "{{ aur_packages }}"
+      #      become: false
+
     - name: "Creating Network Mountpoint Folders"
       file:
         path: "/media/{{ item }}"
@@ -61,9 +91,9 @@
     - name: "Mount Network Shares"
       mount:
         path: "/media/{{ item }}"
-        src: "stoya.mh25.space:/{{ item }}"
-        fstype: nfs
-        opts: rsize=8192,wsize=8192,timeo=14,intr,_netdev
+        src: "//stoya.mh25.space/{{ item }}"
+        fstype: cifs
+        opts: credentials=/etc/.credentials,uid=1001,gid=1001,rw,iocharset=utf8,file_mode=0777,dir_mode=0777 
         state: present
       loop: "{{ myshares }}"
 
