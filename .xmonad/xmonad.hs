@@ -215,7 +215,8 @@ spotifyForceFloatingEventHook = dynamicPropertyChange "WM_NAME" (title =? "Spoti
 myStartupHook = do
           setWMName "LG3D"
           setDefaultCursor xC_left_ptr
-          spawnOnce "compton --config ~/.config/compton/compton.conf" 
+          spawnOnce "picom --dbus --config ~/.config/picom/picom.conf" 
+          spawnOnce "dunst"
           spawnOnce "~/.local/bin/manage_screens.sh"
           --spawnOnce "emacs --daemon &" 
           --spawnOnce "nitrogen --restore &" 
