@@ -13,6 +13,7 @@
       - vim
       - xorg-server
       - xorg-xinit
+      - xorg-xrandr
       - nvidia
       - nvidia-settings
       - nvidia-utils
