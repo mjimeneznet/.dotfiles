@@ -217,6 +217,7 @@ myStartupHook = do
           setDefaultCursor xC_left_ptr
           spawnOnce "picom --dbus --config ~/.config/picom/picom.conf" 
           spawnOnce "dunst"
+	  spawnOnce "zmidimap .config/zmidimap/nanoKONTROL2.mim"
           spawnOnce "~/.local/bin/manage_screens.sh"
           --spawnOnce "emacs --daemon &" 
           --spawnOnce "nitrogen --restore &" 
