@@ -1,5 +1,11 @@
 Device "nanoKONTROL2"
- 
+  // Discord
+  Command controller
+    id=5
+    channel=0
+    remap=0:100
+    shell="pactl set-sink-input-volume `pactl list | grep -E '(^Sink Input)|(media.name = \"playStream\")|(application.name = \"WEBRTC\"$)' | awk '/playStream/ {print a} {a = $0}' | cut -c 13-` $value%" 
+
   // Firefox
   Command controller
     id=5
