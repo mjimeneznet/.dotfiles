@@ -46,8 +46,9 @@
       - zathura
       - xdotool
       - sxiv
-      - pamix
+      - pamixer
       - pulsemixer
+      - neofetch
     aur_packages:
       - emojify
       - nerd-fonts-complete
