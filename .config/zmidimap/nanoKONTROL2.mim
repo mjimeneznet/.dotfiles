@@ -1,5 +1,12 @@
 Device "nanoKONTROL2"
-  
+ 
+  // Firefox
+  Command controller
+    id=5
+    channel=0
+    remap=0:100
+    shell="pactl set-sink-input-volume `pactl list | grep -E '(^Sink Input)|(media.name = \"AudioStream\")|(application.name = \"Firefox\"$)' | awk '/AudioStream/ {print a} {a = $0}' | cut -c 13-` $value%"
+
   //Spotify
   Command controller
     id=6
