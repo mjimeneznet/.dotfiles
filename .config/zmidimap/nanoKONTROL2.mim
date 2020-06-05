@@ -1,0 +1,25 @@
+Device "nanoKONTROL2"
+  
+  //Spotify
+  Command controller
+    id=6
+    channel=0
+    remap=0:100
+    shell="pactl set-sink-input-volume `pactl list | grep -E '(^Sink Input)|(media.name = \"Spotify\"$)' | awk '/Spotify/ {print a} {a = $0}' | cut -c 13-)` $value%"  
+
+  // Blue Yeti
+  Command controller
+    id=0
+    channel=0
+    remap=0:100
+    shell="pactl set-source-volume `pactl list short sources | grep "Blue" | awk '{print $1}'` $value%"
+
+  // Master
+  Command controller
+    id=7
+    channel=0
+    remap=0:100
+    shell="pactl -- set-sink-volume `pactl list short sinks | awk '{print $1}'` $value%"
+
+  
+
