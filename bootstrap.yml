@@ -44,14 +44,19 @@
       - ffmpegthumbnailer
       - imagemagick
       - zathura
+      - zathura-pdf-mupdf
       - xdotool
       - sxiv
       - pamixer
       - pulsemixer
       - neofetch
+      - zenity
+      - unzip
     aur_packages:
       - emojify
       - nerd-fonts-complete
+      - wtfutil
+      - gconf
 
     myshares:
       - programs
