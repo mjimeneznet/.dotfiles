@@ -46,6 +46,7 @@
       - zathura
       - zathura-pdf-mupdf
       - xdotool
+      - xdo
       - sxiv
       - pamixer
       - pulsemixer
