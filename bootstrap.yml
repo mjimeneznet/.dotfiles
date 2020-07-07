@@ -53,6 +53,7 @@
       - neofetch
       - zenity
       - unzip
+      - flameshot
     aur_packages:
       - emojify
       - nerd-fonts-complete
