@@ -46,12 +46,14 @@
       - zathura
       - zathura-pdf-mupdf
       - xdotool
+      - xdo
       - sxiv
       - pamixer
       - pulsemixer
       - neofetch
       - zenity
       - unzip
+      - flameshot
     aur_packages:
       - emojify
       - nerd-fonts-complete
