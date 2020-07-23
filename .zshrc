@@ -126,7 +126,7 @@ eval "$(fasd --init auto)"
 # Completion & Bindings
 #------------------------------
 [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
-[[ $commands[kubectl] ]] && source <(kubectl completion zsh)
+source <(kubectl completion zsh)
 [[ -f ~/.docker-compose.zsh ]] && source ~/.docker-compose.zsh
 
 autoload -Uz compinit && compinit
@@ -142,11 +142,12 @@ alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias ls='exa -la --git'
 alias superpacman"=pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -r sudo pacman -S"
 alias airserver="gst-launch-1.0 airplaysrc ! queue ! h264parse ! avdec_h264 max-threads=1 ! xvimagesink"
+alias obs_webcam="sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="OBS Cam" exclusive_caps=1"
 
 #------------------------------
 # Exports
 #------------------------------
-export MANPAGER="zsh -c 'col -bx | bat -l man -p'"
+#export MANPAGER="zsh -c 'col -bx | bat -l man -p'"
 export PAGER="less -RF"
 export BAT_PAGER="less -RF"
 export FZF_DEFAULT_COMMAND='rg --files --no-ignore --hidden --follow -g "!{.git,node_modules}/*" 2> /dev/null'
