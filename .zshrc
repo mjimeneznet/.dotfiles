@@ -79,18 +79,20 @@ zinit snippet OMZ::lib/history.zsh
 zinit snippet OMZ::lib/key-bindings.zsh
 
 zinit ice as"program" cp"httpstat.sh -> httpstat" pick"httpstat"
-zinit light b4b4r07/httpstat
 
+zinit ice as"program" cp"emojify -> emofijy" pick"emojify"
+
+zinit light b4b4r07/httpstat
 
 zinit light b4b4r07/emoji-cli
 
-zinit ice as"program" cp"emojify -> emofijy" pick"emojify"
 zinit light mrowa44/emojify
 
 #zinit light MichaelAquilina/zsh-auto-notify
 
 zinit light junegunn/fzf
 
+zinit light lincheney/fzf-tab-completion
 #------------------------------
 # Plugins
 #------------------------------
@@ -133,6 +135,7 @@ autoload -Uz compinit && compinit
 
 zstyle ':completion:*' menu select
 zstyle ':completion:*' rehash true
+zstyle ':completion:*' fzf-search-display true
 zstyle ':completion::complete:*' gain-privileges 1
 
 #------------------------------
@@ -143,6 +146,9 @@ alias ls='exa -la --git'
 alias superpacman"=pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -r sudo pacman -S"
 alias airserver="gst-launch-1.0 airplaysrc ! queue ! h264parse ! avdec_h264 max-threads=1 ! xvimagesink"
 alias obs_webcam="sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="OBS Cam" exclusive_caps=1"
+alias k="kubectl"
+alias d="docker"
+alias g="git"
 
 #------------------------------
 # Exports
@@ -193,4 +199,9 @@ export PATH=~/.local/bin:$PATH
 
 # Stuart related config
 [[ ! -f ~/.stuart.zsh ]] || source ~/.stuart.zsh
+
+# Tilix VTE
+if [ $TILIX_ID ] || [ $VTE_VERSION ]; then
+	source /etc/profile.d/vte.sh
+fi
 
