@@ -54,6 +54,7 @@
       - zenity
       - unzip
       - flameshot
+      - copyq
     aur_packages:
       - emojify
       - nerd-fonts-complete
