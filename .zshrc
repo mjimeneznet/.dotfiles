@@ -1,5 +1,12 @@
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block; everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block, everything else may go below.
 #if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 #  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
@@ -25,6 +32,7 @@ HIST_STAMPS="dd.mm.yyyy"
 # Options
 #------------------------------
 unsetopt AUTO_NAME_DIRS
+unsetopt HIST_VERIFY 
 setopt auto_cd
 setopt extended_glob
 setopt nomatch
@@ -35,24 +43,26 @@ setopt complete_aliases
 unsetopt beep
 
 ### Added by Zinit's installer
-if [[ ! -f $HOME/.zinit/bin/zinit.zsh ]]; then
-    print -P "%F{33}▓▒░ %F{220}Installing DHARMA Initiative Plugin Manager (zdharma/zinit)…%f"
-    command mkdir -p "$HOME/.zinit" && command chmod g-rwX "$HOME/.zinit"
-    command git clone https://github.com/zdharma/zinit "$HOME/.zinit/bin" && \
-        print -P "%F{33}▓▒░ %F{34}Installation successful.%f%b" || \
-        print -P "%F{160}▓▒░ The clone has failed.%f%b"
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
 fi
 
-source "$HOME/.zinit/bin/zinit.zsh"
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
 # Load a few important annexes, without Turbo
 # (this is currently required for annexes)
+#
 zinit light-mode for \
-    zinit-zsh/z-a-patch-dl \
-    zinit-zsh/z-a-as-monitor \
-    zinit-zsh/z-a-bin-gem-node
+    zdharma-continuum/zinit-annex-as-monitor \
+    zdharma-continuum/zinit-annex-bin-gem-node \
+    zdharma-continuum/zinit-annex-patch-dl \
+    zdharma-continuum/zinit-annex-rust
 
 ### End of Zinit's installer chunk
 
@@ -93,6 +103,13 @@ zinit light mrowa44/emojify
 zinit light junegunn/fzf
 
 zinit light lincheney/fzf-tab-completion
+
+zinit light reegnz/jq-zsh-plugin 
+
+zinit light chitoku-k/fzf-zsh-completions
+
+zinit light olets/zsh-abbr
+
 #------------------------------
 # Plugins
 #------------------------------
@@ -128,11 +145,14 @@ eval "$(fasd --init auto)"
 # Completion & Bindings
 #------------------------------
 [[ -f ~/.fzf.zsh ]] && source ~/.fzf.zsh
-source <(kubectl completion zsh)
+source <(/home/m.jimenez/.asdf/shims/kubectl completion zsh)
 [[ -f ~/.docker-compose.zsh ]] && source ~/.docker-compose.zsh
+fpath=(~/.asdf/completions $fpath)
+command -v flux >/dev/null && . <(flux completion zsh)
 
 autoload -Uz compinit && compinit
 
+zinit cdreplay -q
 zstyle ':completion:*' menu select
 zstyle ':completion:*' rehash true
 zstyle ':completion:*' fzf-search-display true
@@ -145,10 +165,10 @@ alias dotfiles='/usr/bin/git --git-dir=$HOME/.dotfiles/ --work-tree=$HOME'
 alias ls='exa -la --git'
 alias superpacman"=pacman -Slq | fzf -m --preview 'cat <(pacman -Si {1}) <(pacman -Fl {1} | awk \"{print \$2}\")' | xargs -r sudo pacman -S"
 alias airserver="gst-launch-1.0 airplaysrc ! queue ! h264parse ! avdec_h264 max-threads=1 ! xvimagesink"
-alias obs_webcam="sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="OBS Cam" exclusive_caps=1"
 alias k="kubectl"
 alias d="docker"
 alias g="git"
+alias m="KUBECONFIG=k3s-kubeconfig kubectl"
 
 #------------------------------
 # Exports
@@ -166,6 +186,10 @@ export FZF_CTRL_T_OPTS="--select-1 --exit-0"
 # Change dir and run a ls
 chpwd() {
 	exa -la --git
+}
+
+dry() {
+	docker run --rm -it -v /var/run/docker.sock:/var/run/docker.sock -e DOCKER_HOST=$DOCKER_HOST moncho/dry
 }
 
 # Uncompress everything
@@ -193,9 +217,24 @@ ex() {
     fi
 }
 
-export PATH=~/.local/bin:$PATH
+function copycat() {
+    cat $1 | xclip -selection clipboard $OUTPUT
+} 
+
+# Bitwarden helper
+unlock_bw() {
+  if [[ -z $BW_SESSION ]]; then
+    >&2 echo 'bw locked - unlocking into a new session'
+    export BW_SESSION="$(bw unlock --raw)"
+  fi
+}
+
+export PATH=~/.local/bin:/home/m.jimenez/code/stuart/stuartkube/bin/linux-amd64:$PATH
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+# ASDF
+[[ ! -f ~/.asdf/asdf.sh ]] || source ~/.asdf/asdf.sh
 
 # Stuart related config
 [[ ! -f ~/.stuart.zsh ]] || source ~/.stuart.zsh
@@ -205,3 +244,7 @@ if [ $TILIX_ID ] || [ $VTE_VERSION ]; then
 	source /etc/profile.d/vte.sh
 fi
 
+
+eval "$(atuin init zsh --disable-up-arrow)" 
+
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
